@@ -1,5 +1,6 @@
 #include "todo.hpp"
 #include <cstdlib>
+#include <iostream>
 #include <string_view>
 
 std::optional<Command> parse_command(char *arg) {
@@ -20,4 +21,20 @@ std::optional<fs::path> todo_dir_path_opt() {
   fs::path todo_path(home);
   todo_path.append(homeRelativePath);
   return todo_path;
+}
+
+void list_todos(fs::path todo_dir_path) {
+  try {
+    unsigned entry_num = 1;
+    for (auto &entry : fs::directory_iterator(todo_dir_path)) {
+      if (entry.is_regular_file()) {
+        std::cout << entry_num << ". " << entry.path().filename().string()
+                  << '\n';
+        entry_num++;
+      }
+    }
+  } catch (const fs::filesystem_error &e) {
+    std::cerr << "filesystem error: " << e.what() << '\n';
+    return;
+  }
 }

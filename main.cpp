@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     std::cerr << "Not implemented\n";
     break;
   case Command::List:
-    std::cerr << "Not implemented\n";
+    list_todos(todo_dir_path.value());
     break;
   case Command::CommandListLen:
     break;
