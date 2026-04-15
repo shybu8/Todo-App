@@ -5,10 +5,10 @@
 
 namespace fs = std::filesystem;
 
-enum class Command : unsigned { Add = 0, List, CommandListLen };
+enum class Command : std::size_t { Add = 0, List, Get, CommandListLen };
 
 constexpr unsigned command_to_index(Command cmd) {
-  return static_cast<unsigned>(cmd);
+  return static_cast<std::size_t>(cmd);
 }
 
 inline constexpr std::array<std::string_view,
@@ -16,10 +16,11 @@ inline constexpr std::array<std::string_view,
     commandLiterals{
         "add",
         "list",
+        "get",
     };
 
 inline constexpr std::string_view
-    usageMessage("USAGE:\n\ttodo-app (add | list)\n\n");
+    usageMessage("USAGE:\n\ttodo-app (add | list | get)\n\n");
 
 std::optional<Command> parse_command(char *arg);
 
@@ -28,3 +29,5 @@ std::optional<fs::path> todo_dir_path_opt();
 void list_todos(fs::path todo_dir_path);
 
 void add_todo(fs::path todo_dir_path);
+
+void get_todo(fs::path todo_dir_path, size_t num);
