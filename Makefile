@@ -2,7 +2,7 @@
 
 NAME := todo-app
 CC := g++
-CFLAGS := -Wall -Wextra -Wpedantic -ggdb
+CFLAGS := -Wall -Wextra -Wpedantic -ggdb -std=c++17
 SRC_CPP := main.cpp todo.cpp
 SRC_HPP := todo.hpp
 
