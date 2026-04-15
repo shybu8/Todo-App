@@ -1,8 +1,10 @@
 #include "todo.hpp"
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <string_view>
 
 using std::cerr;
@@ -30,9 +32,26 @@ optional<fs::path> todo_dir_path_opt() {
   return todo_path;
 }
 
+optional<fs::path> num_entry_path(fs::path dir, size_t target_entry_num) {
+  try {
+    size_t entry_num = 1;
+    for (const auto &entry : fs::directory_iterator(dir)) {
+      if (entry.is_regular_file()) {
+        if (entry_num == target_entry_num)
+          return entry.path();
+        entry_num++;
+      }
+    }
+
+  } catch (const fs::filesystem_error &e) {
+    cerr << "filesystem error: " << e.what() << '\n';
+  }
+  return std::nullopt;
+}
+
 void list_todos(fs::path todo_dir_path) {
   try {
-    unsigned entry_num = 1;
+    size_t entry_num = 1;
     for (const auto &entry : fs::directory_iterator(todo_dir_path)) {
       if (entry.is_regular_file()) {
         cout << entry_num << ". " << entry.path().filename().string() << '\n';
@@ -73,19 +92,7 @@ void add_todo(fs::path todo_dir_path) {
 }
 
 void get_todo(fs::path todo_dir_path, size_t num) {
-  optional<fs::path> target_path;
-  try {
-    size_t i = 1;
-    for (const auto &entry : fs::directory_iterator(todo_dir_path)) {
-      if (entry.is_regular_file()) {
-        if (i == num)
-          target_path = entry.path();
-        i++;
-      }
-    }
-  } catch (const fs::filesystem_error &e) {
-    cerr << "filesystem error: " << e.what() << '\n';
-  }
+  optional<fs::path> target_path(num_entry_path(todo_dir_path, num));
   if (!target_path.has_value()) {
     cout << "No such entry exists\n";
     return;
@@ -96,4 +103,24 @@ void get_todo(fs::path todo_dir_path, size_t num) {
     return;
   }
   cout << file.rdbuf();
+}
+
+void rm_todo(fs::path todo_dir_path, size_t num) {
+  optional<fs::path> file_path(num_entry_path(todo_dir_path, num));
+  if (!file_path.has_value()) {
+    cout << "No such entry\n";
+    return;
+  }
+  cout << "Do you really want to delete " << file_path.value().filename()
+       << "? [Y/n]: ";
+  char ans(std::getchar());
+  if (ans == 'y' || ans == '\n') {
+    std::error_code ec;
+    fs::remove(file_path.value(), ec);
+    if (ec) {
+      cerr << "ERROR: Unable to remove file: " << ec.message() << '\n';
+      return;
+    }
+  } else
+    cout << "Cancelled\n";
 }

@@ -6,6 +6,21 @@
 using std::cerr;
 using std::cin;
 using std::optional;
+using std::size_t;
+
+optional<size_t> parse_argv_num(int argc, char *argv[], int target) {
+  if (argc < target + 1) {
+    cerr << "ERROR: Number of entry isn't supplied (see list command)\n";
+    return std::nullopt;
+  }
+  char *end;
+  size_t entry_num = std::strtoull(argv[target], &end, 10);
+  if (argv[target] == end || *end != '\0') {
+    cerr << "ERROR: Supplied entry number is invalid\n";
+    return std::nullopt;
+  }
+  return entry_num;
+}
 
 int main(int argc, char *argv[]) {
   optional<fs::path> todo_dir_path = todo_dir_path_opt();
@@ -19,7 +34,7 @@ int main(int argc, char *argv[]) {
     std::error_code ec;
     fs::create_directory(todo_dir_path.value(), ec);
     if (ec) {
-      cerr << ec.message() << '\n';
+      cerr << "ERROR: Unable to create directory: " << ec.message() << '\n';
       return 1;
     }
   }
@@ -39,21 +54,19 @@ int main(int argc, char *argv[]) {
     list_todos(todo_dir_path.value());
     break;
   case Command::Get: {
-    if (argc < 3) {
-      cerr << "ERROR: Number of entry isn't supplied (see list command)\n";
+    optional<size_t> target(parse_argv_num(argc, argv, 2));
+    if (!target.has_value())
       return 1;
-    }
-    char *end;
-    size_t entry_num = std::strtoull(argv[2], &end, 10);
-    if (argv[2] == end || *end != '\0') {
-      cerr << "ERROR: Supplied entry number is invalid\n";
+    get_todo(todo_dir_path.value(), target.value());
+  } break;
+  case Command::Remove: {
+    optional<size_t> target(parse_argv_num(argc, argv, 2));
+    if (!target.has_value())
       return 1;
-    }
-    get_todo(todo_dir_path.value(), entry_num);
+    rm_todo(todo_dir_path.value(), target.value());
   } break;
   case Command::CommandListLen:
     break;
   }
-
   return 0;
 }
