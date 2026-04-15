@@ -26,3 +26,5 @@ std::optional<Command> parse_command(char *arg);
 std::optional<fs::path> todo_dir_path_opt();
 
 void list_todos(fs::path todo_dir_path);
+
+void add_todo(fs::path todo_dir_path);
