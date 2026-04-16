@@ -65,6 +65,22 @@ int main(int argc, char *argv[]) {
       return 1;
     rm_todo(todo_dir_path.value(), target.value());
   } break;
+  case Command::Set: {
+    optional<size_t> target(parse_argv_num(argc, argv, 2));
+    if (!target.has_value())
+      return 1;
+    if (argc < 4) {
+      cerr << "Please supply status\nUSAGE:\n\ttodo-app set NUM STS\n\n";
+      return 1;
+    }
+    optional<Status> status(parse_status(argv[3]));
+    if (!status.has_value()) {
+      cerr << "ERROR: Invalid status supplied, use (undone, in_progress, "
+              "done)\n";
+      return 1;
+    }
+    set_status(todo_dir_path.value(), target.value(), status.value());
+  } break;
   case Command::CommandListLen:
     break;
   }

@@ -14,9 +14,18 @@ using std::optional;
 
 optional<Command> parse_command(char *arg) {
   std::string_view cmd(arg);
-  for (unsigned i = 0; i < command_to_index(Command::CommandListLen); i++) {
+  for (size_t i = 0; i < command_to_index(Command::CommandListLen); i++) {
     if (cmd == commandLiterals[i])
       return static_cast<Command>(i);
+  }
+  return std::nullopt;
+}
+
+optional<Status> parse_status(char *arg) {
+  std::string_view cmd(arg);
+  for (size_t i = 0; i < status_to_index(Status::StatusListLen); i++) {
+    if (cmd == statusLiterals[i])
+      return static_cast<Status>(i);
   }
   return std::nullopt;
 }
@@ -54,7 +63,20 @@ void list_todos(fs::path todo_dir_path) {
     size_t entry_num = 1;
     for (const auto &entry : fs::directory_iterator(todo_dir_path)) {
       if (entry.is_regular_file()) {
-        cout << entry_num << ". " << entry.path().filename().string() << '\n';
+        std::ifstream file(entry.path(), std::ios::in);
+        if (!file) {
+          cerr << "ERROR: Unable to read file";
+          continue;
+        }
+        std::string first_word, prefix;
+        file >> first_word;
+        file.close();
+        if (first_word == statusLiterals[status_to_index(Status::InProgress)])
+          prefix = "> ";
+        else if (first_word == statusLiterals[status_to_index(Status::Done)])
+          prefix = "V ";
+        cout << entry_num << ". " << prefix << entry.path().filename().string()
+             << '\n';
         entry_num++;
       }
     }
@@ -83,11 +105,12 @@ void add_todo(fs::path todo_dir_path) {
     break;
   }
   cout << "Content (Ctrl+D to done):\n";
-  std::fstream file(file_path, std::ios::out);
+  std::ofstream file(file_path, std::ios::out);
   if (!file) {
     cerr << "ERROR: Unable to open a file\n";
     return;
   }
+  file << "UNDONE\n";
   file << cin.rdbuf();
 }
 
@@ -97,11 +120,12 @@ void get_todo(fs::path todo_dir_path, size_t num) {
     cout << "No such entry exists\n";
     return;
   }
-  std::fstream file(target_path.value(), std::ios::in);
+  std::ifstream file(target_path.value(), std::ios::in);
   if (!file) {
     cerr << "ERROR: Unable to open a file\n";
     return;
   }
+  file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   cout << file.rdbuf();
 }
 
@@ -123,4 +147,30 @@ void rm_todo(fs::path todo_dir_path, size_t num) {
     }
   } else
     cout << "Cancelled\n";
+}
+
+void set_status(fs::path todo_dir_path, size_t num, Status sts) {
+  const optional<fs::path> file_path(num_entry_path(todo_dir_path, num));
+  if (!file_path.has_value()) {
+    cout << "No such entry\n";
+    return;
+  }
+  std::ifstream file_read(file_path.value(), std::ios::in);
+  if (!file_read) {
+    cerr << "ERROR: Unable to open file for reading\n";
+    return;
+  }
+  file_read.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  std::ostringstream content;
+  content << file_read.rdbuf();
+  file_read.close();
+
+  std::ofstream file_write(file_path.value(), std::ios::trunc);
+  if (!file_write) {
+    cerr << "ERROR: Unable to open file for writing (trunc)\n";
+    return;
+  }
+  file_write << statusLiterals[status_to_index(sts)] << '\n';
+  file_write << content.str();
+  file_write.close();
 }
