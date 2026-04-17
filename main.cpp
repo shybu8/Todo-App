@@ -1,12 +1,15 @@
-#include "todo.hpp"
+#include "todo_db.hpp"
+#include "utils.hpp"
 #include <cstdlib>
-#include <filesystem>
 #include <iostream>
+#include <string>
 
+namespace fs = std::filesystem;
 using std::cerr;
-using std::cin;
 using std::optional;
 using std::size_t;
+using std::string;
+using std::string_view;
 
 optional<size_t> parse_argv_num(int argc, char *argv[], int target) {
   if (argc < target + 1) {
@@ -39,6 +42,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  const auto todo_db = TodoDBFs(todo_dir_path.value());
+
   optional<Command> cmd;
   cmd = argc > 1 ? parse_command(argv[1]) : std::nullopt;
   if (!cmd.has_value()) {
@@ -48,22 +53,22 @@ int main(int argc, char *argv[]) {
 
   switch (cmd.value()) {
   case Command::Add:
-    add_todo(todo_dir_path.value());
+    add_todo(todo_db);
     break;
   case Command::List:
-    list_todos(todo_dir_path.value());
+    list_todos(todo_db);
     break;
   case Command::Get: {
     optional<size_t> target(parse_argv_num(argc, argv, 2));
     if (!target.has_value())
       return 1;
-    get_todo(todo_dir_path.value(), target.value());
+    get_todo(todo_db, target.value());
   } break;
   case Command::Remove: {
     optional<size_t> target(parse_argv_num(argc, argv, 2));
     if (!target.has_value())
       return 1;
-    rm_todo(todo_dir_path.value(), target.value());
+    rm_todo(todo_db, target.value());
   } break;
   case Command::Set: {
     optional<size_t> target(parse_argv_num(argc, argv, 2));
@@ -79,7 +84,7 @@ int main(int argc, char *argv[]) {
               "done)\n";
       return 1;
     }
-    set_status(todo_dir_path.value(), target.value(), status.value());
+    set_status(todo_db, target.value(), status.value());
   } break;
   case Command::CommandListLen:
     break;
