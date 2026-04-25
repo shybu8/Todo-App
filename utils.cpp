@@ -12,7 +12,7 @@ using std::optional;
 using std::string;
 using std::string_view;
 
-optional<fs::path> todo_dir_path_opt() {
+optional<fs::path> default_todo_dir_path_opt() {
   const string_view homeRelativePath = ".todo";
 
   char *home = std::getenv("HOME");
@@ -25,6 +25,7 @@ optional<fs::path> todo_dir_path_opt() {
 
 void list_todos(const TodoDB &todo_db) {
   size_t todo_num = 1;
+  todo_db.list();
   for (const auto &[name, status] : todo_db.list()) {
     string_view prefix;
     if (status == Status::InProgress)

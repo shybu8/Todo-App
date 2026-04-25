@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <optional>
 
-std::optional<std::filesystem::path> todo_dir_path_opt();
+std::optional<std::filesystem::path> default_todo_dir_path_opt();
 
 void list_todos(const TodoDB &todo_db);
 

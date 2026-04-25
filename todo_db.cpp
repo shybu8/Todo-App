@@ -1,16 +1,20 @@
 #include "todo_db.hpp"
 #include "enums_literals.hpp"
+#include "protocol.hpp"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <tuple>
 #include <utility>
 
 namespace fs = std::filesystem;
+using asio::ip::tcp;
 using std::cerr;
 using std::optional;
 using std::pair;
 using std::string;
+using std::string_view;
 using std::vector;
 
 TodoDBFs::TodoDBFs(fs::path todo_dir) noexcept : todo_dir_(todo_dir) {}
@@ -35,7 +39,7 @@ Todo TodoDBFs::load(std::string_view name) const {
     throw std::runtime_error("Unable to read todo status");
   }
 
-  optional<Status> status = parse_status(status_str.c_str());
+  optional<Status> status = parse_status(status_str);
   if (!status) {
     cerr << "Unrecognized todo status, falling back to 'undone'\n";
     status = Status::Undone;
@@ -77,6 +81,68 @@ vector<pair<string, Status>> TodoDBFs::list() const {
 bool TodoDBFs::exists(std::string_view name) const {
   for (const auto &entry : fs::directory_iterator(todo_dir_)) {
     if (entry.is_regular_file() && entry.path().filename() == name)
+      return true;
+  }
+  return false;
+}
+
+TodoDBNetClient::TodoDBNetClient(asio::io_context &io,
+                                 const tcp::endpoint &endpoint)
+    : socket_(io) {
+  socket_.connect(endpoint);
+}
+
+void TodoDBNetClient::save(const Todo &todo) const {
+  auto buf = Protocol::Client::make_save_req(todo.name(), todo.content(),
+                                             todo.status());
+  asio::error_code ec;
+  asio::write(socket_, asio::buffer(buf), ec);
+  if (ec)
+    throw std::runtime_error(ec.message());
+}
+
+Todo TodoDBNetClient::load(std::string_view name) const {
+  auto buf = Protocol::Client::make_load_req(name);
+  asio::error_code ec;
+  asio::write(socket_, asio::buffer(buf), ec);
+  if (ec)
+    throw std::runtime_error(ec.message());
+
+  buf.clear();
+  asio::read_until(socket_, asio::dynamic_buffer(buf), "\n\n", ec);
+
+  auto content_status = Protocol::Client::parse_load_ans(buf);
+  if (!content_status)
+    throw std::runtime_error("Protocol violation");
+  auto todo = Todo(string(name), string(content_status.value().first),
+                   content_status.value().second);
+  return todo;
+}
+
+void TodoDBNetClient::remove(std::string_view name) const {
+  auto buf = Protocol::Client::make_remove_req(name);
+  asio::error_code ec;
+  asio::write(socket_, asio::buffer(buf), ec);
+  if (ec)
+    throw std::runtime_error(ec.message());
+}
+
+vector<pair<string, Status>> TodoDBNetClient::list() const {
+  auto req = Protocol::Client::make_list_req();
+  asio::error_code ec;
+  asio::write(socket_, asio::buffer(req), ec);
+  string buf;
+  asio::read_until(socket_, asio::dynamic_buffer(buf), "\n\n", ec);
+  auto part = buf.substr(0, buf.find("\n\n") + 2);
+  auto res = Protocol::Client::parse_list_ans(part);
+  if (!res)
+    throw std::runtime_error("Protocol violation");
+  return res.value();
+}
+bool TodoDBNetClient::exists(std::string_view target_name) const {
+  auto pairs = list();
+  for (const auto &[name, status] : pairs) {
+    if (name == target_name)
       return true;
   }
   return false;

@@ -37,6 +37,28 @@ inline constexpr std::array<std::string_view,
         "done",
     };
 
+enum class ProtocolCommand : std::size_t {
+  Save = 0,
+  Load,
+  Remove,
+  List,
+  ProtocolCommandListLen
+};
+
+constexpr size_t protocol_command_to_index(ProtocolCommand p_cmd) {
+  return static_cast<size_t>(p_cmd);
+}
+
+inline constexpr std::array<std::string_view,
+                            protocol_command_to_index(
+                                ProtocolCommand::ProtocolCommandListLen)>
+    protocolCommandLiterals{
+        "save",
+        "load",
+        "rm",
+        "ls",
+    };
+
 inline constexpr std::string_view
     usageMessage("USAGE:\n\ttodo-app (add|ls|get NUM|rm NUM|set NUM "
                  "(undone|in_progress|done))\n\n");
@@ -50,11 +72,21 @@ inline std::optional<Command> parse_command(const char *arg) {
   return std::nullopt;
 }
 
-inline std::optional<Status> parse_status(const char *arg) {
-  std::string_view cmd(arg);
+inline std::optional<Status> parse_status(const std::string_view cmd) {
   for (size_t i = 0; i < status_to_index(Status::StatusListLen); i++) {
     if (cmd == statusLiterals[i])
       return static_cast<Status>(i);
+  }
+  return std::nullopt;
+}
+
+inline std::optional<ProtocolCommand> parse_protocol_command(const char *arg) {
+  std::string_view cmd(arg);
+  size_t end =
+      protocol_command_to_index(ProtocolCommand::ProtocolCommandListLen);
+  for (size_t i = 0; i < end; i++) {
+    if (cmd == protocolCommandLiterals[i])
+      return static_cast<ProtocolCommand>(i);
   }
   return std::nullopt;
 }
