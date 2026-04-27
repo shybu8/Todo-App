@@ -1,5 +1,6 @@
 #include "protocol.hpp"
 #include "utils.hpp"
+#include "visitor_pattern.hpp"
 #include <asio.hpp>
 #include <filesystem>
 #include <iostream>
@@ -12,11 +13,6 @@ using std::cerr;
 using std::optional;
 using std::string;
 using std::string_view;
-
-template <class... Ts> struct overloaded : Ts... {
-  using Ts::operator()...;
-};
-template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 int main() {
   optional<fs::path> todo_dir_path = default_todo_dir_path_opt();
