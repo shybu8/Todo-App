@@ -78,58 +78,6 @@ int main() {
                        todo_db.save(todo);
                      }},
           parsed.value());
-
-      // size_t first_token_end = req.find('\n');
-      // string first_token = string(req.substr(0, first_token_end));
-      // optional<ProtocolCommand> cmd =
-      //     parse_protocol_command(first_token.c_str());
-      // if (!cmd) {
-      //   buf.erase(0, req_end + 2);
-      //   continue;
-      // }
-      // switch (cmd.value()) {
-      // case ProtocolCommand::List: {
-      // } break;
-      // case ProtocolCommand::Load: {
-      //   string ans;
-      //   size_t second_token_end = req.find("\n", first_token_end + 1);
-      //   size_t name_pos = first_token_end + 1;
-      //   size_t name_len = second_token_end - first_token_end - 1;
-      //   string_view name(req.data() + name_pos, name_len);
-      //   const auto todo = todo_db.load(name);
-      //   string buf;
-      //   buf.append(statusLiterals[status_to_index(todo.status())]);
-      //   buf.append("\n");
-      //   buf.append(todo.content());
-      //   buf.append("\n\n");
-      //   asio::write(socket, asio::buffer(buf));
-      // } break;
-      // case ProtocolCommand::Remove: {
-      //   size_t second_token_end = req.find("\n", first_token_end + 1);
-      //   size_t name_pos = first_token_end + 1;
-      //   size_t name_len = second_token_end - first_token_end - 1;
-      //   string_view name(req.data() + name_pos, name_len);
-      //   todo_db.remove(name);
-      // } break;
-      // case ProtocolCommand::Save: {
-      //   size_t second_token_end = req.find("\n", first_token_end + 1);
-      //   size_t name_pos = first_token_end + 1;
-      //   size_t name_len = second_token_end - first_token_end - 1;
-      //   size_t third_token_end = req.find("\n", second_token_end + 1);
-      //   size_t status_pos = second_token_end + 1;
-      //   size_t status_len = third_token_end - second_token_end - 1;
-      //   string_view name(req.data() + name_pos, name_len);
-      //   string_view status_str(req.data() + status_pos, status_len);
-      //   optional<Status> status = parse_status(string(status_str).c_str());
-      //   string_view content(req.data() + third_token_end + 1,
-      //                       req.length() - third_token_end - 3);
-      //   auto todo = Todo(string(name), string(content),
-      //                    status.value_or(Status::Undone));
-      //   todo_db.save(todo);
-      // } break;
-      // case ProtocolCommand::ProtocolCommandListLen:
-      //   break;
-      // }
       buf.erase(0, req_end + 2);
     }
   }
