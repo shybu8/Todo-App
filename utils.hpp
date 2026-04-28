@@ -2,10 +2,14 @@
 
 #include "enums_literals.hpp"
 #include "todo_db.hpp"
+#include <asio/io_context.hpp>
 #include <filesystem>
 #include <optional>
 
 std::optional<std::filesystem::path> default_todo_dir_path_opt();
+
+std::optional<std::unique_ptr<TodoDB>> determine_backend(asio::io_context &io,
+                                                         char *todo_data);
 
 void list_todos(const TodoDB &todo_db);
 

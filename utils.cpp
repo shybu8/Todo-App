@@ -1,16 +1,19 @@
 #include "utils.hpp"
 #include "todo.hpp"
+#include <asio.hpp>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <string>
-#include <string_view>
 
 namespace fs = std::filesystem;
+using std::cerr;
 using std::cin;
 using std::cout;
 using std::optional;
 using std::string;
 using std::string_view;
+using std::unique_ptr;
 
 optional<fs::path> default_todo_dir_path_opt() {
   const string_view homeRelativePath = ".todo";
@@ -21,6 +24,55 @@ optional<fs::path> default_todo_dir_path_opt() {
   fs::path todo_path(home);
   todo_path.append(homeRelativePath);
   return todo_path;
+}
+
+optional<unique_ptr<TodoDB>> determine_backend(asio::io_context &io,
+                                               char *todo_data) {
+  unique_ptr<TodoDB> todo_db;
+  if (todo_data == nullptr) {
+    // Getting default dir path
+    optional<fs::path> todo_dir_path = default_todo_dir_path_opt();
+    if (!todo_dir_path.has_value()) {
+      cerr << "ERROR: Unable to get homedir path";
+      return std::nullopt;
+    }
+
+    // Checking if exists, creating if it's not
+    if (!fs::exists(todo_dir_path.value())) {
+      cerr << "No ~/.todo directory, creating...";
+      std::error_code ec;
+      fs::create_directory(todo_dir_path.value(), ec);
+      if (ec) {
+        cerr << "ERROR: Unable to create directory: " << ec.message() << '\n';
+        return std::nullopt;
+      }
+    }
+
+    todo_db = std::make_unique<TodoDBFs>(todo_dir_path.value());
+  } else {
+    auto todo_data_str = string_view(todo_data);
+    size_t possible_colon = todo_data_str.find(":");
+    if (possible_colon != string_view::npos) {
+      // Net path supplied
+      auto address = todo_data_str.substr(0, possible_colon);
+      size_t port = std::strtoull(
+          string(todo_data_str.substr(possible_colon + 1)).c_str(), NULL, 10);
+      auto endpoint =
+          asio::ip::tcp::endpoint(asio::ip::make_address(address), port);
+      todo_db = std::make_unique<TodoDBNetClient>(io, endpoint);
+
+    } else {
+      // Fs path supplied
+      auto todo_dir_path = fs::path(todo_data_str);
+      if (!fs::exists(todo_dir_path)) {
+        cerr << "ERROR: Non existent directory supplied in environment "
+                "variable\n";
+        return std::nullopt;
+      }
+      todo_db = std::make_unique<TodoDBFs>(todo_dir_path);
+    }
+  }
+  return todo_db;
 }
 
 void list_todos(const TodoDB &todo_db) {
