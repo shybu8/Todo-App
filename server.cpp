@@ -3,37 +3,27 @@
 #include "visitor_pattern.hpp"
 #include <asio.hpp>
 #include <cstdlib>
-#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <string_view>
 
-namespace fs = std::filesystem;
 using asio::ip::tcp;
 using std::cerr;
-using std::optional;
 using std::string;
 using std::string_view;
 using std::unique_ptr;
 
-int main() {
-  // optional<fs::path> todo_dir_path = default_todo_dir_path_opt();
-  // if (!todo_dir_path.has_value()) {
-  //   cerr << "ERROR: Unable to get homedir path";
-  //   return 1;
-  // }
-
-  // if (!fs::exists(todo_dir_path.value())) {
-  //   cerr << "No ~/.todo directory, creating...";
-  //   std::error_code ec;
-  //   fs::create_directory(todo_dir_path.value(), ec);
-  //   if (ec) {
-  //     cerr << "ERROR: Unable to create directory: " << ec.message() << '\n';
-  //     return 1;
-  //   }
-  // }
-
-  // const auto todo_db = TodoDBFs(todo_dir_path.value());
+int main(int argc, char *argv[]) {
+  size_t port;
+  if (argc > 1) {
+    char *end;
+    port = std::strtoull(argv[1], &end, 10);
+    if (*end != '\0') {
+      cerr << "ERROR: Invalid port supplied\n";
+      return 1;
+    }
+  } else
+    port = 9999;
 
   asio::io_context io_ctx;
   char *todo_data = std::getenv("TODO_DATA");
@@ -42,7 +32,7 @@ int main() {
     return 1;
   unique_ptr<TodoDB> todo_db = std::move(todo_db_opt.value());
 
-  tcp::acceptor acceptor(io_ctx, tcp::endpoint(tcp::v4(), 9999));
+  tcp::acceptor acceptor(io_ctx, tcp::endpoint(tcp::v4(), port));
   for (;;) {
     tcp::socket socket(io_ctx);
     acceptor.accept(socket);
