@@ -92,8 +92,9 @@ TodoDBNetClient::TodoDBNetClient(asio::io_context &io,
 }
 
 void TodoDBNetClient::save(const Todo &todo) const {
-  auto buf = Protocol::Client::make_save_req(todo.name(), todo.content(),
-                                             todo.status());
+  string buf;
+  Protocol::Client::make_save_req(buf, todo.name(), todo.content(),
+                                  todo.status());
   asio::error_code ec;
   asio::write(socket_, asio::buffer(buf), ec);
   if (ec)
@@ -101,14 +102,14 @@ void TodoDBNetClient::save(const Todo &todo) const {
 }
 
 Todo TodoDBNetClient::load(std::string_view name) const {
-  auto buf = Protocol::Client::make_load_req(name);
+  string buf;
+  Protocol::Client::make_load_req(buf, name);
   asio::error_code ec;
   asio::write(socket_, asio::buffer(buf), ec);
   if (ec)
     throw std::runtime_error(ec.message());
-
   buf.clear();
-  // asio::read_until(socket_, asio::dynamic_buffer(buf), "\n\n", ec);
+
   asio::error_code asio_ec;
   std::error_code std_ec;
   string_view body;
@@ -125,7 +126,8 @@ Todo TodoDBNetClient::load(std::string_view name) const {
 }
 
 void TodoDBNetClient::remove(std::string_view name) const {
-  auto buf = Protocol::Client::make_remove_req(name);
+  string buf;
+  Protocol::Client::make_remove_req(buf, name);
   asio::error_code ec;
   asio::write(socket_, asio::buffer(buf), ec);
   if (ec)
@@ -133,12 +135,12 @@ void TodoDBNetClient::remove(std::string_view name) const {
 }
 
 vector<pair<string, Status>> TodoDBNetClient::list() const {
-  auto req = Protocol::Client::make_list_req();
-  asio::error_code asio_ec;
-  asio::write(socket_, asio::buffer(req), asio_ec);
   string buf;
-  // asio::read_until(socket_, asio::dynamic_buffer(buf), "\n\n", ec);
-  // auto part = buf.substr(0, buf.find("\n\n") + 2);
+  Protocol::Client::make_list_req(buf);
+  asio::error_code asio_ec;
+  asio::write(socket_, asio::buffer(buf), asio_ec);
+  buf.clear();
+
   std::error_code std_ec;
   string_view body;
   std_ec = Protocol::read_message(socket_, buf, body, asio_ec);

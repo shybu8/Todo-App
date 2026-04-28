@@ -60,16 +60,17 @@ int main() {
                      },
                      [&todo_db, &socket](Protocol::Server::ListReq list_req) {
                        (void)list_req;
-                       auto ans =
-                           Protocol::Server::make_list_ans(todo_db.list());
+                       string ans;
+                       Protocol::Server::make_list_ans(ans, todo_db.list());
                        asio::error_code ignored_error;
                        asio::write(socket, asio::buffer(ans), ignored_error);
                      },
                      [&todo_db, &socket](Protocol::Server::LoadReq load_req) {
                        const auto todo = todo_db.load(load_req.name);
-                       auto buf = Protocol::Server::make_load_ans(
-                           todo.content(), todo.status());
-                       asio::write(socket, asio::buffer(buf));
+                       string ans;
+                       Protocol::Server::make_load_ans(ans, todo.content(),
+                                                       todo.status());
+                       asio::write(socket, asio::buffer(ans));
                      },
                      [&todo_db](Protocol::Server::SaveReq save_req) {
                        auto todo =

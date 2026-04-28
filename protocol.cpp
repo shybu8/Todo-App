@@ -116,8 +116,7 @@ variant<ListReq, RemoveReq, LoadReq, SaveReq> parse_req(string_view req,
   return {};
 }
 
-string make_list_ans(vector<pair<string, Status>> todos) {
-  string ans;
+void make_list_ans(string &ans, vector<pair<string, Status>> todos) {
   for (const auto &[name, status] : todos) {
     ans.append(name);
     ans.append(",");
@@ -125,66 +124,52 @@ string make_list_ans(vector<pair<string, Status>> todos) {
     ans.append("\n");
   }
   insert_content_len(ans);
-  return ans;
 }
 
-string make_load_ans(string_view content, Status status) {
-  string buf;
-  buf.append(statusLiterals[status_to_index(status)]);
-  buf.append("\n");
-  buf.append(content);
-  insert_content_len(buf);
-  return buf;
+void make_load_ans(string &ans, string_view content, Status status) {
+  ans.append(statusLiterals[status_to_index(status)]);
+  ans.append("\n");
+  ans.append(content);
+  insert_content_len(ans);
 }
 
 } // namespace Server
 
 namespace Client {
 
-string make_save_req(string_view name, string_view content, Status status) {
-  string buf;
-  buf.append(protocolCommandLiterals[protocol_command_to_index(
+void make_save_req(string &req, string_view name, string_view content,
+                   Status status) {
+  req.append(protocolCommandLiterals[protocol_command_to_index(
       ProtocolCommand::Save)]);
-  buf.append("\n");
-  buf.append(name);
-  buf.append("\n");
-  buf.append(statusLiterals[status_to_index(status)]);
-  buf.append("\n");
-  buf.append(content);
-  // buf.append("\n\n");
-  insert_content_len(buf);
-  return buf;
+  req.append("\n");
+  req.append(name);
+  req.append("\n");
+  req.append(statusLiterals[status_to_index(status)]);
+  req.append("\n");
+  req.append(content);
+  insert_content_len(req);
 }
 
-string make_load_req(string_view name) {
-  string buf;
-  buf.append(protocolCommandLiterals[protocol_command_to_index(
+void make_load_req(string &req, string_view name) {
+  req.append(protocolCommandLiterals[protocol_command_to_index(
       ProtocolCommand::Load)]);
-  buf.append("\n");
-  buf.append(name);
-  // buf.append("\n\n");
-  insert_content_len(buf);
-  return buf;
+  req.append("\n");
+  req.append(name);
+  insert_content_len(req);
 }
 
-string make_remove_req(string_view name) {
-  string buf;
-  buf.append(protocolCommandLiterals[protocol_command_to_index(
+void make_remove_req(string &req, string_view name) {
+  req.append(protocolCommandLiterals[protocol_command_to_index(
       ProtocolCommand::Remove)]);
-  buf.append("\n");
-  buf.append(name);
-  // buf.append("\n\n");
-  insert_content_len(buf);
-  return buf;
+  req.append("\n");
+  req.append(name);
+  insert_content_len(req);
 }
 
-string make_list_req() {
-  string buf;
-  buf.append(protocolCommandLiterals[protocol_command_to_index(
+void make_list_req(string &req) {
+  req.append(protocolCommandLiterals[protocol_command_to_index(
       ProtocolCommand::List)]);
-  // buf.append("\n\n");
-  insert_content_len(buf);
-  return buf;
+  insert_content_len(req);
 }
 
 pair<string_view, Status> parse_load_ans(const string_view body,

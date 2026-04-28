@@ -2,7 +2,6 @@
 
 #include "enums_literals.hpp"
 #include <asio.hpp>
-#include <optional>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -51,6 +50,7 @@ std::error_code read_message(asio::ip::tcp::socket &socket, std::string &msg,
                              asio::error_code &asio_ec);
 
 namespace Server {
+
 struct RemoveReq {
   std::string_view name;
 };
@@ -70,21 +70,23 @@ struct SaveReq {
 std::variant<ListReq, RemoveReq, LoadReq, SaveReq>
 parse_req(std::string_view req, std::error_code &ec);
 
-std::string make_list_ans(std::vector<std::pair<std::string, Status>> todos);
+void make_list_ans(std::string &ans,
+                   std::vector<std::pair<std::string, Status>> todos);
 
-std::string make_load_ans(std::string_view content, Status status);
+void make_load_ans(std::string &ans, std::string_view content, Status status);
 
 } // namespace Server
 
 namespace Client {
-std::string make_save_req(std::string_view name, std::string_view content,
-                          Status status);
 
-std::string make_load_req(std::string_view name);
+void make_save_req(std::string &req, std::string_view name,
+                   std::string_view content, Status status);
 
-std::string make_remove_req(std::string_view name);
+void make_load_req(std::string &req, std::string_view name);
 
-std::string make_list_req();
+void make_remove_req(std::string &req, std::string_view name);
+
+void make_list_req(std::string &req);
 
 std::pair<std::string_view, Status> parse_load_ans(std::string_view body,
                                                    std::error_code &ec);
