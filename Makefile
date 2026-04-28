@@ -1,24 +1,45 @@
-.PHONY: clean all
+.PHONY: all clean rebuild
+
+CXX := g++
+CXXFLAGS := -Wall -Wextra -Wpedantic -ggdb -std=c++17 -MMD -MP
+LDLIBS :=
 
 CLI_NAME := todo-app
 SRV_NAME := todo-server
 
-CC := g++
-CFLAGS := -Wall -Wextra -Wpedantic -ggdb -std=c++17
+BUILD_DIR := build
 
-SRC_CLI_CPP := main.cpp todo.cpp utils.cpp todo_db.cpp protocol.cpp
-SRC_CLI_HPP := todo.hpp utils.hpp todo_db.hpp enums_literals.hpp protocol.hpp
+COMMON_CPP := todo.cpp utils.cpp todo_db.cpp protocol.cpp
 
-SRC_SRV_CPP := server.cpp todo_db.cpp utils.cpp todo.cpp protocol.cpp
-SRC_SRV_HPP := todo_db.hpp utils.hpp todo.hpp protocol.hpp visitor_pattern.hpp
+CLI_CPP := main.cpp $(COMMON_CPP)
+SRV_CPP := server.cpp $(COMMON_CPP)
+
+CLI_OBJ := $(CLI_CPP:%.cpp=$(BUILD_DIR)/cli/%.o)
+SRV_OBJ := $(SRV_CPP:%.cpp=$(BUILD_DIR)/srv/%.o)
+
+CLI_DEP := $(CLI_OBJ:.o=.d)
+SRV_DEP := $(SRV_OBJ:.o=.d)
 
 all: $(CLI_NAME) $(SRV_NAME)
 
-$(CLI_NAME): $(SRC_CLI_CPP) $(SRC_CLI_HPP)
-	$(CC) $(SRC_CLI_CPP) -o $(CLI_NAME) $(CFLAGS)
+$(CLI_NAME): $(CLI_OBJ)
+	$(CXX) $^ -o $@ $(LDLIBS)
 
-$(SRV_NAME): $(SRC_SRV_CPP) $(SRC_SRV_HPP)
-	$(CC) $(SRC_SRV_CPP) -o $(SRV_NAME) $(CFLAGS)
+$(SRV_NAME): $(SRV_OBJ)
+	$(CXX) $^ -o $@ $(LDLIBS)
+
+$(BUILD_DIR)/cli/%.o: %.cpp
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/srv/%.o: %.cpp
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+-include $(CLI_DEP)
+-include $(SRV_DEP)
 
 clean:
-	rm $(CLI_NAME)
+	rm -rf $(BUILD_DIR) $(CLI_NAME) $(SRV_NAME)
+
+rebuild: clean all
