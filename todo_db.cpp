@@ -5,7 +5,6 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
-#include <tuple>
 #include <utility>
 
 namespace fs = std::filesystem;
@@ -109,13 +108,19 @@ Todo TodoDBNetClient::load(std::string_view name) const {
     throw std::runtime_error(ec.message());
 
   buf.clear();
-  asio::read_until(socket_, asio::dynamic_buffer(buf), "\n\n", ec);
-
-  auto content_status = Protocol::Client::parse_load_ans(buf);
-  if (!content_status)
+  // asio::read_until(socket_, asio::dynamic_buffer(buf), "\n\n", ec);
+  asio::error_code asio_ec;
+  std::error_code std_ec;
+  string_view body;
+  std_ec = Protocol::read_message(socket_, buf, body, asio_ec);
+  if (std_ec)
     throw std::runtime_error("Protocol violation");
-  auto todo = Todo(string(name), string(content_status.value().first),
-                   content_status.value().second);
+
+  auto content_status = Protocol::Client::parse_load_ans(body, ec);
+  if (std_ec)
+    throw std::runtime_error("Protocol violation");
+  auto todo =
+      Todo(string(name), string(content_status.first), content_status.second);
   return todo;
 }
 
@@ -129,16 +134,22 @@ void TodoDBNetClient::remove(std::string_view name) const {
 
 vector<pair<string, Status>> TodoDBNetClient::list() const {
   auto req = Protocol::Client::make_list_req();
-  asio::error_code ec;
-  asio::write(socket_, asio::buffer(req), ec);
+  asio::error_code asio_ec;
+  asio::write(socket_, asio::buffer(req), asio_ec);
   string buf;
-  asio::read_until(socket_, asio::dynamic_buffer(buf), "\n\n", ec);
-  auto part = buf.substr(0, buf.find("\n\n") + 2);
-  auto res = Protocol::Client::parse_list_ans(part);
-  if (!res)
+  // asio::read_until(socket_, asio::dynamic_buffer(buf), "\n\n", ec);
+  // auto part = buf.substr(0, buf.find("\n\n") + 2);
+  std::error_code std_ec;
+  string_view body;
+  std_ec = Protocol::read_message(socket_, buf, body, asio_ec);
+  if (std_ec)
     throw std::runtime_error("Protocol violation");
-  return res.value();
+  auto res = Protocol::Client::parse_list_ans(body, std_ec);
+  if (std_ec)
+    throw std::runtime_error("Protocol violation");
+  return res;
 }
+
 bool TodoDBNetClient::exists(std::string_view target_name) const {
   auto pairs = list();
   for (const auto &[name, status] : pairs) {

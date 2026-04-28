@@ -10,7 +10,7 @@ SRC_CLI_CPP := main.cpp todo.cpp utils.cpp todo_db.cpp protocol.cpp
 SRC_CLI_HPP := todo.hpp utils.hpp todo_db.hpp enums_literals.hpp protocol.hpp
 
 SRC_SRV_CPP := server.cpp todo_db.cpp utils.cpp todo.cpp protocol.cpp
-SRC_SRV_HPP := todo_db.hpp utils.hpp todo.hpp protocol.hpp
+SRC_SRV_HPP := todo_db.hpp utils.hpp todo.hpp protocol.hpp visitor_pattern.hpp
 
 all: $(CLI_NAME) $(SRV_NAME)
 

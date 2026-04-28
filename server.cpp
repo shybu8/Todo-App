@@ -40,18 +40,18 @@ int main() {
     acceptor.accept(socket);
     string buf;
     for (;;) {
-      asio::error_code ec;
-      asio::read_until(socket, asio::dynamic_buffer(buf), "\n\n", ec);
-      if (ec == asio::error::eof)
+      asio::error_code asio_ec;
+      std::error_code std_ec;
+      string_view req;
+      std_ec = Protocol::read_message(socket, buf, req, asio_ec);
+      // asio::read_until(socket, asio::dynamic_buffer(buf), "\n\n", asio_ec);
+      if (std_ec == Protocol::Errc::AsioError && asio_ec == asio::error::eof)
         break;
 
-      size_t req_end = buf.find("\n\n");
-      auto req = string_view(buf.data(), req_end + 2);
-
-      auto parsed = Protocol::Server::parse_req(req);
-      if (!parsed.has_value()) {
-        cerr << "Protocol violation\n";
-        buf.erase(0, req_end + 2);
+      auto parsed = Protocol::Server::parse_req(req, std_ec);
+      if (std_ec) {
+        cerr << "Protocol violation: " << std_ec.message() << '\n';
+        buf.clear();
         continue;
       }
       std::visit(
@@ -77,8 +77,8 @@ int main() {
                                 save_req.status);
                        todo_db.save(todo);
                      }},
-          parsed.value());
-      buf.erase(0, req_end + 2);
+          parsed);
+      buf.clear();
     }
   }
   return 0;
